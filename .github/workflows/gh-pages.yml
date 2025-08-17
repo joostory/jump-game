@@ -23,16 +23,13 @@ jobs:
         run: cargo install wasm-pack
 
       - name: Create deployment directory
-        run: mkdir -p dist
+        run: |
+          mkdir -p dist
+          cp index.html dist/
+          touch dist/.nojekyll
 
       - name: Build Wasm package
         run: wasm-pack build --target web --out-dir dist/pkg
-
-      - name: Copy static assets
-        run: cp index.html dist/
-
-      - name: List deployment directory
-        run: ls -R dist
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
