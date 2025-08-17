@@ -22,17 +22,20 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack
 
-      - name: Build
-        run: wasm-pack build --target web
+      - name: Create deployment directory
+        run: mkdir -p dist
 
-      - name: Prepare for deployment
-        run: |
-          mkdir -p out
-          cp -r pkg index.html out/
-          ls -l out
+      - name: Build Wasm package
+        run: wasm-pack build --target web --out-dir dist/pkg
+
+      - name: Copy static assets
+        run: cp index.html dist/
+
+      - name: List deployment directory
+        run: ls -R dist
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
+          folder: dist
           branch: gh-pages
-          folder: out
