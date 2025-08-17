@@ -24,14 +24,13 @@ jobs:
 
       - name: Create deployment directory
         run: |
-          mkdir -p dist
-          cp index.html dist/
-          rm .gitignore
+          mkdir -p out
+          cp index.html out/
 
       - name: Build Wasm package
-        run: wasm-pack build --target web --out-dir dist/pkg
+        run: wasm-pack build --target web --out-dir out/pkg
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: out
