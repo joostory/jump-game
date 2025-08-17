@@ -27,11 +27,12 @@ jobs:
 
       - name: Prepare for deployment
         run: |
-          mkdir -p dist
-          cp -r pkg index.html dist/
+          mkdir -p out
+          cp -r pkg index.html out/
+          ls -l out
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
           branch: gh-pages
+          folder: out
