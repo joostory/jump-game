@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Jump Game</title>
+    <style>
+      body { margin: 0; overflow: hidden; background-color: #333; }
+      canvas { display: block; margin: auto; }
+      #controls {
+        position: fixed;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        user-select: none;
+      }
+      .control-btn {
+        width: 80px;
+        height: 80px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #jump-btn {
+        width: 100px;
+        height: 100px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+    <div id="controls">
+      <div id="left-btn" class="control-btn">&#8592;</div>
+      <div id="jump-btn" class="control-btn">&#8593;</div>
+      <div id="right-btn" class="control-btn">&#8594;</div>
+    </div>
+
+    <script type="module">
+      import init, { handle_key_down, handle_key_up, handle_click, start_move, stop_move, jump, resize, start_game } from "./pkg/jump_game.js";
+      init().then(() => {
+        const canvas = document.getElementById('game-canvas');
+
+        // Function to resize the canvas and inform the game
+        function resizeCanvas() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          if (window.gameHasStarted) {
+            resize(canvas.width, canvas.height);
+          }
+        }
+
+        // Set initial size and start the game
+        resizeCanvas();
+        start_game(canvas.width, canvas.height);
+        window.gameHasStarted = true;
+
+        // Add all event listeners
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('keydown', handle_key_down);
+        window.addEventListener('keyup', handle_key_up);
+        canvas.addEventListener('click', handle_click);
+
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const jumpBtn = document.getElementById('jump-btn');
+
+        const addListener = (element, startFunc, stopFunc) => {
+          element.addEventListener('mousedown', (e) => { e.preventDefault(); startFunc(); });
+          element.addEventListener('mouseup', (e) => { e.preventDefault(); stopFunc(); });
+          element.addEventListener('mouseleave', (e) => { e.preventDefault(); stopFunc(); });
+          element.addEventListener('touchstart', (e) => { e.preventDefault(); startFunc(); });
+          element.addEventListener('touchend', (e) => { e.preventDefault(); stopFunc(); });
+        };
+
+        addListener(leftBtn, () => start_move("left"), () => stop_move("left"));
+        addListener(rightBtn, () => start_move("right"), () => stop_move("right"));
+
+        jumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); jump(); });
+        jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+      });
+    </script>
+  </body>
+</html>
