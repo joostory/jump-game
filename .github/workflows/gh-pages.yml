@@ -25,9 +25,14 @@ jobs:
       - name: Build
         run: wasm-pack build --target web
 
+      - name: Prepare for deployment
+        run: |
+          mkdir -p dist
+          cp -r pkg index.html dist/
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+          publish_dir: ./dist
           publish_branch: gh-pages
