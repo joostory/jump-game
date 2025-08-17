@@ -99,6 +99,11 @@ impl Game {
         }
     }
 
+    fn resize(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+    }
+
     fn update(&mut self) {
         if self.state != GameState::Playing {
             return;
@@ -203,6 +208,7 @@ impl Game {
 
         self.context.set_fill_style_str("black");
         self.context.set_font("24px Arial");
+        self.context.set_text_align("start"); // Reset text alignment
         self.context.fill_text(&format!("Score: {}", self.score), 10.0, 30.0).unwrap();
 
         if self.state == GameState::GameOver {
@@ -220,28 +226,29 @@ impl Game {
         }
     }
 
-    fn handle_key_down(&mut self, key: &str) {
+    fn start_move(&mut self, direction: &str) {
         if self.state != GameState::Playing {
             return;
         }
-        match key {
-            "ArrowLeft" => self.player.is_moving_left = true,
-            "ArrowRight" => self.player.is_moving_right = true,
-            " " | "ArrowUp" => {
-                if !self.player.is_jumping {
-                    self.player.velocity_y = -15.0; // Increased jump power
-                    self.player.is_jumping = true;
-                }
-            }
+        match direction {
+            "left" => self.player.is_moving_left = true,
+            "right" => self.player.is_moving_right = true,
             _ => {}
         }
     }
 
-    fn handle_key_up(&mut self, key: &str) {
-        match key {
-            "ArrowLeft" => self.player.is_moving_left = false,
-            "ArrowRight" => self.player.is_moving_right = false,
+    fn stop_move(&mut self, direction: &str) {
+        match direction {
+            "left" => self.player.is_moving_left = false,
+            "right" => self.player.is_moving_right = false,
             _ => {}
+        }
+    }
+
+    fn jump(&mut self) {
+        if self.state == GameState::Playing && !self.player.is_jumping {
+            self.player.velocity_y = -15.0;
+            self.player.is_jumping = true;
         }
     }
 }
@@ -252,10 +259,51 @@ thread_local! {
 }
 
 #[wasm_bindgen]
+pub fn resize(width: u32, height: u32) {
+    GAME.with(|game_rc| {
+        if let Some(game) = &mut *game_rc.borrow_mut() {
+            game.resize(width, height);
+        }
+    });
+}
+
+#[wasm_bindgen]
+pub fn start_move(direction: String) {
+    GAME.with(|game_rc| {
+        if let Some(game) = &mut *game_rc.borrow_mut() {
+            game.start_move(&direction);
+        }
+    });
+}
+
+#[wasm_bindgen]
+pub fn stop_move(direction: String) {
+    GAME.with(|game_rc| {
+        if let Some(game) = &mut *game_rc.borrow_mut() {
+            game.stop_move(&direction);
+        }
+    });
+}
+
+#[wasm_bindgen]
+pub fn jump() {
+    GAME.with(|game_rc| {
+        if let Some(game) = &mut *game_rc.borrow_mut() {
+            game.jump();
+        }
+    });
+}
+
+#[wasm_bindgen]
 pub fn handle_key_down(event: KeyboardEvent) {
     GAME.with(|game_rc| {
         if let Some(game) = &mut *game_rc.borrow_mut() {
-            game.handle_key_down(&event.key());
+            match event.key().as_str() {
+                "ArrowLeft" => game.start_move("left"),
+                "ArrowRight" => game.start_move("right"),
+                " " | "ArrowUp" => game.jump(),
+                _ => {}
+            }
         }
     });
 }
@@ -264,7 +312,11 @@ pub fn handle_key_down(event: KeyboardEvent) {
 pub fn handle_key_up(event: KeyboardEvent) {
     GAME.with(|game_rc| {
         if let Some(game) = &mut *game_rc.borrow_mut() {
-            game.handle_key_up(&event.key());
+            match event.key().as_str() {
+                "ArrowLeft" => game.stop_move("left"),
+                "ArrowRight" => game.stop_move("right"),
+                _ => {}
+            }
         }
     });
 }
@@ -282,8 +334,8 @@ pub fn handle_click() {
     });
 }
 
-#[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
+#[wasm_bindgen]
+pub fn start_game(width: u32, height: u32) -> Result<(), JsValue> {
     utils::set_panic_hook();
 
     let window = web_sys::window().expect("no global `window` exists");
@@ -298,12 +350,9 @@ pub fn main() -> Result<(), JsValue> {
         .ok_or_else(|| JsValue::from_str("Context not supported"))?
         .dyn_into::<CanvasRenderingContext2d>()?;
 
-    canvas.set_width(800);
-    canvas.set_height(600);
-
-    // Initialize the game state
+    // Initialize the game state with initial canvas size
     GAME.with(|game_rc| {
-        *game_rc.borrow_mut() = Some(Game::new(context, canvas.width(), canvas.height()));
+        *game_rc.borrow_mut() = Some(Game::new(context, width, height));
     });
 
     let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
